@@ -1,0 +1,11 @@
+node_modules/
+downloads/
+*.log
+.env
+.DS_Store
+Thumbs.db
+*.mp4
+*.mov
+*.avi
+yt-dlp-master/
+*.rtf
