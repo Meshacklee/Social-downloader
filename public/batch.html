@@ -262,149 +262,184 @@ https://vm.tiktok.com/..."></textarea>
     </div>
 
     <script>
-        let videoQueue = [];
         
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('addVideosBtn').addEventListener('click', function() {
-                const urlsText = document.getElementById('videoUrls').value;
-                const urls = urlsText.split('\n').filter(url => url.trim() !== '');
-                
-                if (urls.length === 0) {
-                    alert('Please enter at least one video URL');
-                    return;
-                }
-                
-                // Clear input
-                document.getElementById('videoUrls').value = '';
-                
-                // Add videos to queue
-                urls.forEach(url => {
-                    addToQueue(url.trim());
-                });
-                
-                // Show download all button
-                if (videoQueue.length > 0) {
-                    document.getElementById('downloadAllBtn').style.display = 'block';
-                }
-            });
-            
-            document.getElementById('downloadAllBtn').addEventListener('click', function() {
-                downloadAllVideos();
-            });
+        let videoQueue = [];
+let progressIntervals = {}; // Add this at the top
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('addVideosBtn').addEventListener('click', function() {
+        const urlsText = document.getElementById('videoUrls').value;
+        const urls = urlsText.split('\n').filter(url => url.trim() !== '');
+        
+        if (urls.length === 0) {
+            alert('Please enter at least one video URL');
+            return;
+        }
+        
+        // Clear input
+        document.getElementById('videoUrls').value = '';
+        
+        // Add videos to queue
+        urls.forEach(url => {
+            addToQueue(url.trim());
         });
         
-        function addToQueue(url) {
-            const videoId = Date.now() + Math.random();
-            const videoItem = {
-                id: videoId,
-                url: url,
-                title: 'Loading...',
-                status: 'pending',
-                progress: 0
-            };
-            
-            videoQueue.push(videoItem);
-            renderVideoList();
+        // Show download all button
+        if (videoQueue.length > 0) {
+            document.getElementById('downloadAllBtn').style.display = 'block';
         }
+    });
+    
+    document.getElementById('downloadAllBtn').addEventListener('click', function() {
+        downloadAllVideos();
+    });
+});
+
+function addToQueue(url) {
+    const videoId = Date.now() + Math.random();
+    const videoItem = {
+        id: videoId,
+        url: url,
+        title: url.substring(0, 60) + (url.length > 60 ? '...' : ''),
+        status: 'pending',
+        progress: 0
+    };
+    
+    videoQueue.push(videoItem);
+    renderVideoList();
+}
+
+function renderVideoList() {
+    const videoList = document.getElementById('videoList');
+    videoList.innerHTML = '';
+    
+    videoQueue.forEach(video => {
+        const videoElement = document.createElement('div');
+        videoElement.className = `video-item ${video.status}`;
+        videoElement.innerHTML = `
+            <div class="video-header">
+                <div class="video-title">${video.title}</div>
+                <div class="video-status status-${video.status}">${getStatusText(video.status)}</div>
+            </div>
+            <div class="video-url">${video.url}</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${video.progress}%"></div>
+            </div>
+        `;
+        videoList.appendChild(videoElement);
+    });
+}
+
+function getStatusText(status) {
+    switch(status) {
+        case 'pending': return 'Pending';
+        case 'downloading': return 'Downloading';
+        case 'completed': return 'Completed';
+        case 'error': return 'Error';
+        default: return status;
+    }
+}
+
+function updateVideoStatus(videoId, status, title = null, progress = null) {
+    const videoIndex = videoQueue.findIndex(v => v.id === videoId);
+    if (videoIndex !== -1) {
+        if (status) videoQueue[videoIndex].status = status;
+        if (title) videoQueue[videoIndex].title = title;
+        if (progress !== null) videoQueue[videoIndex].progress = progress;
+        renderVideoList();
+    }
+}
+
+async function downloadAllVideos() {
+    document.getElementById('loading').style.display = 'block';
+    
+    for (let i = 0; i < videoQueue.length; i++) {
+        const video = videoQueue[i];
+        const videoId = video.id;
         
-        function renderVideoList() {
-            const videoList = document.getElementById('videoList');
-            videoList.innerHTML = '';
+        try {
+            updateVideoStatus(videoId, 'downloading', video.title, 0);
             
-            videoQueue.forEach(video => {
-                const videoElement = document.createElement('div');
-                videoElement.className = 'video-item';
-                videoElement.innerHTML = `
-                    <div class="video-header">
-                        <div class="video-title">${video.title}</div>
-                        <div class="video-status status-${video.status}">${getStatusText(video.status)}</div>
-                    </div>
-                    <div class="video-url">${video.url}</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${video.progress}%"></div>
-                    </div>
-                `;
-                videoList.appendChild(videoElement);
-            });
-        }
-        
-        function getStatusText(status) {
-            switch(status) {
-                case 'pending': return 'Pending';
-                case 'downloading': return 'Downloading';
-                case 'completed': return 'Completed';
-                case 'error': return 'Error';
-                default: return status;
+            // Determine endpoint
+            let endpoint = '/api/download';
+            if (video.url.includes('youtube.com') || video.url.includes('youtu.be')) {
+                endpoint = '/api/download/youtube';
+            } else if (video.url.includes('instagram.com')) {
+                endpoint = '/api/download/instagram';
+            } else if (video.url.includes('tiktok.com') || video.url.includes('vm.tiktok.com')) {
+                endpoint = '/api/download/tiktok';
+            } else if (video.url.includes('twitter.com') || video.url.includes('x.com')) {
+                endpoint = '/api/download/twitter';
             }
-        }
-        
-        function updateVideoStatus(videoId, status, title = null, progress = null) {
-            const video = videoQueue.find(v => v.id === videoId);
-            if (video) {
-                video.status = status;
-                if (title) video.title = title;
-                if (progress !== null) video.progress = progress;
-                renderVideoList();
-            }
-        }
-        
-        async function downloadAllVideos() {
-            document.getElementById('loading').style.display = 'block';
             
-            for (let i = 0; i < videoQueue.length; i++) {
-                const video = videoQueue[i];
-                const videoId = video.id;
-                
-                try {
-                    updateVideoStatus(videoId, 'downloading', video.title, 0);
-                    
-                    // Determine endpoint
-                    let endpoint = '/api/download';
-                    if (video.url.includes('youtube.com') || video.url.includes('youtu.be')) {
-                        endpoint = '/api/download/youtube';
-                    } else if (video.url.includes('instagram.com')) {
-                        endpoint = '/api/download/instagram';
-                    } else if (video.url.includes('tiktok.com') || video.url.includes('vm.tiktok.com')) {
-                        endpoint = '/api/download/tiktok';
-                    } else if (video.url.includes('twitter.com') || video.url.includes('x.com')) {
-                        endpoint = '/api/download/twitter';
-                    }
-                    
-                    // Simulate progress updates
-                    const progressInterval = setInterval(() => {
-                        const currentProgress = videoQueue.find(v => v.id === videoId)?.progress || 0;
-                        if (currentProgress < 90) {
-                            updateVideoStatus(videoId, 'downloading', video.title, currentProgress + 10);
-                        }
-                    }, 500);
-                    
-                    // Make API call
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ url: video.url })
-                    });
-                    
-                    clearInterval(progressInterval);
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        updateVideoStatus(videoId, 'completed', data.title || 'Download Complete', 100);
-                    } else {
-                        throw new Error(data.error || 'Download failed');
-                    }
-                } catch (error) {
-                    updateVideoStatus(videoId, 'error', video.title, 0);
-                    console.error('Download error for video:', video.url, error);
+            // Create progress updates with proper interval handling
+            const progressInterval = setInterval(() => {
+                const currentProgress = videoQueue.find(v => v.id === videoId)?.progress || 0;
+                if (currentProgress < 90) {
+                    updateVideoStatus(videoId, 'downloading', video.title, currentProgress + 10);
                 }
+            }, 500);
+            
+            // Store interval reference
+            progressIntervals[videoId] = progressInterval;
+            
+            // Make API call with proper error handling
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: video.url })
+            });
+            
+            // Clear progress interval
+            if (progressIntervals[videoId]) {
+                clearInterval(progressIntervals[videoId]);
+                delete progressIntervals[videoId];
             }
             
-            document.getElementById('loading').style.display = 'none';
-            alert('Batch download completed! Check your downloads folder.');
+            // Check if response is OK
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+            
+            // Get response text first
+            const responseText = await response.text();
+            
+            // Check if response is empty
+            if (!responseText) {
+                throw new Error('Empty response from server');
+            }
+            
+            // Try to parse JSON safely
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('Invalid JSON response:', responseText);
+                throw new Error('Invalid response from server');
+            }
+            
+            if (data.success) {
+                updateVideoStatus(videoId, 'completed', data.title || 'Download Complete', 100);
+            } else {
+                throw new Error(data.error || 'Download failed');
+            }
+        } catch (error) {
+            // Clear progress interval if it exists
+            if (progressIntervals[videoId]) {
+                clearInterval(progressIntervals[videoId]);
+                delete progressIntervals[videoId];
+            }
+            
+            updateVideoStatus(videoId, 'error', video.title, 0);
+            console.error('Download error for video:', video.url, error);
         }
+    }
+    
+    document.getElementById('loading').style.display = 'none';
+    alert('Batch download completed! Check your downloads folder.');
+}
     </script>
 </body>
 </html>
