@@ -1,50 +1,40 @@
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 
 console.log('Starting server...');
+console.log('Current directory:', __dirname);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Serve static files
 app.use(express.static('public'));
 
-// API Routes - Add these missing routes
-app.get('/api/platforms', (req, res) => {
-    res.json({
-        platforms: [
-            { name: 'YouTube', key: 'youtube', icon: '📺' },
-            { name: 'Instagram', key: 'instagram', icon: '📱' },
-            { name: 'TikTok', key: 'tiktok', icon: '🎵' },
-            { name: 'Twitter/X', key: 'twitter', icon: '🐦' }
-        ]
-    });
+// Simple routes
+app.get('/', (req, res) => {
+    console.log('Serving root route');
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    console.log('Looking for index.html at:', indexPath);
+    
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.send(`
+            <h1>Server Running</h1>
+            <p>No index.html found.</p>
+        `);
+    }
 });
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
+    console.log('Serving health route');
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        message: 'Server is healthy'
+    });
 });
 
-// Serve HTML files properly
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/batch.html', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'batch.html'));
-});
-
-// Catch-all for any other routes - prevent 404
-app.use((req, res) => {
-    res.status(404).json({ error: 'Endpoint not found' });
-});
-
-// Start server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
 });
-
-console.log('Server setup complete');

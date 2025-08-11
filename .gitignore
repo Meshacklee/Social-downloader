@@ -1,11 +1,16 @@
+# Node.js
 node_modules/
+
+# Downloads folder
 downloads/
+
+# Temporary files
 *.log
-.env
+*.rtf
+
+# yt-dlp master folder
+yt-dlp-master/
+
+# Other ignored files
 .DS_Store
 Thumbs.db
-*.mp4
-*.mov
-*.avi
-yt-dlp-master/
-*.rtf
