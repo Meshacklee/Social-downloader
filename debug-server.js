@@ -57,3 +57,15 @@ app.get('/api/test', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`=== DEBUG SERVER RUNNING ON PORT ${PORT} ===`);
 });
+app.get('/test-files', (req, res) => {
+    const publicPath = path.join(__dirname, 'public');
+    const files = fs.existsSync(publicPath) ? fs.readdirSync(publicPath) : 'Public folder not found';
+    
+    res.json({
+        currentDir: __dirname,
+        publicPath: publicPath,
+        publicExists: fs.existsSync(publicPath),
+        publicFiles: files,
+        allFiles: fs.readdirSync(__dirname)
+    });
+});
