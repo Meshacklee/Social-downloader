@@ -1,46 +1,50 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
+
+console.log('Starting server...');
 
 const app = express();
-
-// CRITICAL: Use Render's PORT or default to 3000
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Basic middleware
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json());
 app.use(express.static('public'));
 
-// Your existing routes here...
-// ... all your existing code ...
-
-// CRITICAL: Make sure this is at the end of your server.js
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
-    console.log('Social Media Downloader ready!');
+// Simple routes
+app.get('/', (req, res) => {
+    res.send('<h1>Social Media Downloader</h1><p>Server is running!</p>');
 });
 
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        message: 'Server is healthy'
+    });
+});
 
-// Global error handlers
+app.get('/api/test', (req, res) => {
+    res.json({ 
+        message: 'API is working!',
+        version: '1.0.0'
+    });
+});
+
+// Global error handler
 process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
-    // Don't exit - let Render handle restarts
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // Don't exit - let Render handle restarts
+    console.error('Unhandled Rejection:', reason);
 });
 
-// Make sure server starts
-const server = app.listen(PORT, '0.0.0.0', () => {
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
-    console.log('Social Media Downloader ready!');
+    console.log('Health check available at /health');
 });
 
-// Handle server errors
-server.on('error', (err) => {
-    console.error('Server error:', err);
-});
+console.log('Server setup complete');
