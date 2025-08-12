@@ -38,3 +38,18 @@ app.get('/health', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
 });
+
+app.get('/debug/files', (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+    
+    res.json({
+        currentDir: __dirname,
+        files: fs.readdirSync(__dirname),
+        publicFiles: fs.existsSync(path.join(__dirname, 'public')) 
+            ? fs.readdirSync(path.join(__dirname, 'public'))
+            : 'No public folder',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0' // Update this to track versions
+    });
+});
